@@ -1,0 +1,277 @@
+////////////////////////////////////////////////////////////////////////	
+	
+	ifstream input;
+	ofstream output;
+    unsigned char ch[4];
+	unsigned char work[9];
+	union                                      // input font file maps
+	{
+		unsigned char buffer[20000];
+		struct
+		{
+			char        structure[3];
+			unsigned char rec_seq[3];
+			union
+			{
+				struct
+				{
+					unsigned char BFN_name[10];
+				};
+				struct
+				{
+					unsigned char FRMRK[80];
+				};
+				struct
+				{
+					char FNC_header[6];
+					unsigned char FNC_xunit[2];
+					unsigned char FNC_yunit[2];
+				};
+				struct      //Font Descriptor
+				{
+					char FND_facetype[32];
+					unsigned char FND_weight[1];
+					unsigned char FND_width[1];
+					unsigned char FND_maxvsz[2];
+					unsigned char FND_norvsz[2];
+					unsigned char FND_minvsz[2];
+					unsigned char FND_maxhsz[2];
+					unsigned char FND_norhsz[2];
+					unsigned char FND_minhsz[2];
+				};
+				FNMentry FNM[Total_Font_Number]; 
+				struct    //Font Orientation
+				{
+					unsigned char FNO_sp[4];
+					unsigned char FNO_MaxBOset[2];
+					unsigned char FNO_MaxCharInc[2];
+					unsigned char FNO_SpCharInc[2];
+					unsigned char FNO_MaxBExt[2];
+				};
+				FNIentry FNI[Total_Font_Number];
+				unsigned char FNG[12298];             // Font patterns record
+			};
+		};
+		
+	};
+	
+	unsigned short int  RecLen;
+	int FontSize, FontBegin, FontEnd, ReadSize=0 ;
+	int FontExt;	// Maximum Baseline Extent
+	bool FNIonce = FALSE ;
+	bool Found   = FALSE ;
+
+	unsigned char FntPttrn[500];        //contain all the pattern bytes for the font to print
+	unsigned char * FNGP;               // pointer to input pattern
+	unsigned char * FntP;               // pointer to pattern bytes
+
+
+
+    //FONT FNT[Total_Font_Number];      // keep each font's 
+	//vector<char> buffer(12304);
+	//vector<char>::iterator pt;
+
+    
+	input.open(infile,ios::binary | ios::nocreate);
+	if (!input)
+	{
+		AfxMessageBox(" Open Input File Error ! ") ;
+		return;
+	}
+
+	for ( ; ; )
+	{
+		input.read(ch,3);
+		if ( ch[0] != 'Z' )
+		{
+			AfxMessageBox(" Invalid file format ! ") ;
+			return;
+		}
+
+		RecLen = ch[1] * 0x100 + ch[2] ;
+
+		input.read(buffer,RecLen-2);
+
+		if (strncmp(structure,(const char *)Begin_Font,sizeof(structure)) == 0)
+		{
+//			xcode(BFN_name,sizeof(BFN_name));
+		} 
+
+		if (strncmp(structure,(const char *)Font_Remarks,3) == 0)
+		{
+//			xcode(FRMRK,sizeof(FRMRK));
+//			cout << FRMRK ;
+		} 
+ 
+		if (strncmp(structure,(const char *)Font_Control,sizeof(structure)) == 0)
+		{
+//			unsigned short int pixel = FNC_xunit[0] * 0x100 + FNC_xunit[1] ;
+//			cout << "X Pixels : " << pixel ;
+//			pixel = FNC_yunit[0] * 0x100 + FNC_yunit[1] ;
+//			cout << " , Y Pixels : " << pixel << endl;
+		}
+		
+		if (strncmp(structure,(const char *)Font_Descriptor,sizeof(structure)) == 0)
+		{
+//		    unsigned short int maxvsize = FND_maxvsz[0] * 0x100 + FND_maxvsz[1]; 			 
+//		    cout << "Maximum Vertical Font Size : " << maxvsize << endl;
+//			unsigned short int norvsize = FND_norvsz[0] * 0x100 + FND_norvsz[1]; 			 
+//		    cout << "Normal Vertical Font Size : " << norvsize << endl;
+//			unsigned short int minvsize = FND_minvsz[0] * 0x100 + FND_minvsz[1]; 			 
+//		    cout << "Minimum Vertical Font Size : " << minvsize << endl;
+//			unsigned short int maxhsize = FND_maxhsz[0] * 0x100 + FND_maxhsz[1]; 			 
+//		    cout << "Maximum Horizontal Font Size : " << maxhsize << endl;
+//			unsigned short int norhsize = FND_norhsz[0] * 0x100 + FND_norhsz[1]; 			 
+//		    cout << "Normal Horizontal Font Size : " << norhsize << endl;
+//			unsigned short int minhsize = FND_minhsz[0] * 0x100 + FND_minhsz[1]; 			 
+//		    cout << "Minimum Horizonatal Font Size : " << minhsize << endl;
+		}
+
+		if (strncmp(structure,(const char *)Font_Patterns_Map,sizeof(structure)) == 0)
+		{
+//			FNMentry * FNMP = FNM ;
+//			
+//			for (int i = 0 ; i < Total_Font_Number ; i++ )
+//			{
+//				for (int j = 0 ; j < 4 ; j++) 
+//				{
+//					FNT[i].offset[j] = FNMP->FNMoffset[j] ; 
+//				}
+//	 		    FNMP ++ ; 
+//			}
+		}
+
+
+		if (strncmp(structure,(const char *)Font_Orientation,sizeof(structure)) == 0)
+		{
+		 	FontExt = FNO_MaxBExt[0] * 0x100 + FNO_MaxBExt[1];
+		}
+
+
+		if (strncmp(structure,(const char *)Font_Index,sizeof(structure)) == 0)
+		{ 
+			if ( FNIonce == TRUE )
+				continue ;
+
+			FNIentry * FNIP = FNI ;
+			
+			for (int i = 0 ; i < Total_Font_Number ; i++ )
+			{
+				unsigned char tempname[10];
+				strncpy((char *)tempname,FNIP->FNI_name,8);
+				xcode(tempname,sizeof(tempname));
+
+                if (strncmp((const char *)tempname,fontname,8) == 0)
+				{
+					FontSize = FNIP->FNI_size[0] * 0x100 + FNIP->FNI_size[1] ;
+					FontBegin = (FNIP->FNI_indx[0] * 0x100 + FNIP->FNI_indx[1]) * FontSize
+						           * FontExt / 8 ;
+					FontEnd = FontBegin + FontSize * FontExt / 8 ;
+					Found = TRUE ;
+					break;
+				}
+
+				FNIP ++ ; 
+			}
+
+			if ( Found != TRUE)
+			{
+				AfxMessageBox(" Character Not Found ! ");
+				return ;
+			}
+			
+			FNIonce = TRUE ;   // only need to process one Font_Index record, skip the rest
+
+
+		}
+
+		if (strncmp(structure,(const char *)Font_Patterns,sizeof(structure)) == 0)
+		{
+			RecLen   -= 8;                    // deduct the len/control field's length
+			ReadSize += RecLen;               // accumulated length read from Font_Patterns' records
+			
+			if ( ReadSize < FontBegin )
+			{
+				continue;                     // not in this pattern record, skip it
+			}
+
+			
+			if (FontEnd > ReadSize)			// if over 2 records, go on reading the next rec
+			{
+				input.read(work,9);			// ommit the first 9 control bytes on the next rec      
+				input.read(buffer+RecLen,FontEnd-ReadSize); // read only the wanted bytes
+			}
+
+
+			FNGP = FNG + FontBegin - ReadSize + RecLen ;
+			FntP = FntPttrn;  
+			for (int i=0 ; i < (FontEnd - FontBegin) ; i++, FNGP++, FntP++)
+				*FntP = *FNGP;
+			break ;
+		
+		}
+
+	
+		if (strncmp(structure,(const char *)End_Font,sizeof(structure)) == 0)
+			break;
+			
+	}		// end of the input record reading loop 
+	
+
+
+	output.open(outfile,ios::binary);
+	if (!output)
+	{
+		AfxMessageBox(" Please End the last MSPAINT Window first !") ;
+		return;
+	}  
+
+	BMPhdr * BMPP = new BMPhdr[1];
+	BMPP->bm = 0x4d42;   // 'BM' 
+	BMPP->filesize = sizeof(BMPhdr) + FontSize * FontExt * 4 ;
+	BMPP->color = BMPP->impcolor = BMPP->comprs = BMPP->rsvr =0; 
+	BMPP->bmpofst = sizeof(BMPhdr); 
+	BMPP->bmphdsz = 0x28;      //Windows 95, NT
+	BMPP->height = FontExt;
+	BMPP->width = FontSize;
+	BMPP->planes = 1;
+	BMPP->bitpix = 32;
+	BMPP->bmpsize = FontSize * FontExt * 4 ;
+	BMPP->hres = BMPP->vres = 0xb6d;
+	BMPP->hres = BMPP->vres = 0;
+
+	output.write((const char *)BMPP, sizeof(BMPhdr));
+
+	delete[] BMPP;  
+
+	int i,j,k;
+	const unsigned char lowvalue[4] = {0x00,0x00,0x00,0x00};
+	const unsigned char highvalue[4] = {0xff,0xff,0xff,0xff};
+
+	
+	FntP = FntPttrn + (FontExt-1)*FontSize/8 ;
+
+	for (i = 0 ; i < FontExt ; i++)
+	{
+		unsigned char * FntQ = FntP;
+		for (j = 0 ; j < FontSize/8 ; j++)
+		{
+			for (k = 0 ; k < 8 ; k++)
+			{
+				if ( *FntQ & (0x80 >> k))
+					output.write(lowvalue,4);
+				else
+					output.write(highvalue,4);
+			}
+			FntQ ++ ;
+		}
+		FntP -= FontSize/8;
+	} 
+	
+    
+	output.close() ;
+	input.close();
+
+//	spawnlp(P_NOWAIT,"c:\\Program Files\\Accessories\\Mspaint.exe",
+//		    "c:\\Program Files\\Accessories\\Mspaint.exe",outfile,NULL);
+	spawnlp(P_NOWAIT,"Mspaint.exe","Mspaint.exe",outfile,NULL);
